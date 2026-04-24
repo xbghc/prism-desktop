@@ -26,3 +26,8 @@ nsis:
   allowToChangeInstallationDirectory: true
   perMachine: false
 npmRebuild: false
+publish:
+  provider: github
+  owner: xbghc
+  repo: prism-desktop
+  releaseType: release

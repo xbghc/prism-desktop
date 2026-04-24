@@ -6,6 +6,7 @@ import { registerIpcHandlers } from './ipc'
 import { loadSettings } from './settings'
 import { getPaths } from './paths'
 import { createLogger } from './logger'
+import { setupAutoUpdater } from './updater'
 
 const log = createLogger('main')
 
@@ -56,6 +57,8 @@ app.whenReady().then(() => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  setupAutoUpdater()
 })
 
 app.on('window-all-closed', () => {
