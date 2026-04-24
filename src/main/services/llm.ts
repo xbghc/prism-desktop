@@ -11,6 +11,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { app } from 'electron'
 import Anthropic from '@anthropic-ai/sdk'
 import { LLMError } from '../../shared/errors'
 import type { ContentType } from '../../shared/types'
@@ -28,35 +29,25 @@ export interface GenerateOptions {
   onDelta?: (delta: string) => void
 }
 
-/** prompts 目录解析：
- * - 开发态：electron-vite 里 main 进程 cwd 通常是仓库根，resources/ 就在根目录
- * - 生产态：electron-builder 把 resources/ 拷到 app.getAppPath()/resources 或 process.resourcesPath
- * 这里两种都试，简单且不依赖 electron app 句柄（方便在任何上下文运行）。
+/**
+ * prompts 目录解析：统一用 `app.getAppPath()`。
+ * - 开发态：返回项目根目录，`resources/prompts/` 在那里
+ * - 生产态：返回 app.asar（或 asar 被禁用时的 app 目录）；electron 能透明读 asar，
+ *   加上 electron-builder.yml 的 `asarUnpack: resources/**` 兜底，无论哪种情况
+ *   `readFileSync` 都能拿到文件
  */
-function resolvePromptsDir(): string[] {
-  const candidates: string[] = []
-  // process.resourcesPath 只在打包后的 Electron 运行时存在
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const resourcesPath = (process as any).resourcesPath as string | undefined
-  if (resourcesPath) {
-    candidates.push(join(resourcesPath, 'prompts'))
-    candidates.push(join(resourcesPath, 'app', 'resources', 'prompts'))
-  }
-  candidates.push(join(process.cwd(), 'resources', 'prompts'))
-  return candidates
+function resolvePromptsDir(): string {
+  return join(app.getAppPath(), 'resources', 'prompts')
 }
 
 function loadPrompt(contentType: ContentType): string {
   const filename = `${contentType}.md`
-  const dirs = resolvePromptsDir()
-  for (const dir of dirs) {
-    try {
-      return readFileSync(join(dir, filename), 'utf8')
-    } catch {
-      // try next candidate
-    }
+  const dir = resolvePromptsDir()
+  try {
+    return readFileSync(join(dir, filename), 'utf8')
+  } catch (err) {
+    throw new LLMError(`找不到提示词文件 ${filename}`, `路径: ${join(dir, filename)}（${String(err)}）`)
   }
-  throw new LLMError(`找不到提示词文件 ${filename}`, `已尝试路径: ${dirs.join(' | ')}`)
 }
 
 function renderTemplate(template: string, vars: Record<string, string>): string {
