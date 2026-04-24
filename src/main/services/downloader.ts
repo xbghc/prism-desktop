@@ -214,6 +214,14 @@ async function runYtdlp(
   })
   const detach = hookAbort(signal, child)
 
+  // 立即挂载退出监听，避免进程秒退时 listener 还没 attach 丢事件。
+  // 用 'close' 而不是 'exit' —— 'close' 在 stdio 完全关闭后才 fire，
+  // 保证我们读完 stdout/stderr 再判退出码。
+  const closePromise = new Promise<number>((resolve, reject) => {
+    child.once('close', (code) => resolve(code ?? -1))
+    child.once('error', reject)
+  })
+
   const tail: string[] = []
   const errorLines: string[] = []
   let title = ''
@@ -262,10 +270,7 @@ async function runYtdlp(
 
   try {
     await Promise.all([consume(child.stdout), consume(child.stderr)])
-    const code: number = await new Promise((resolve, reject) => {
-      child.once('exit', (c) => resolve(c ?? -1))
-      child.once('error', reject)
-    })
+    const code = await closePromise
 
     if (signal?.aborted) {
       throw new DownloadError('下载已取消')
@@ -317,6 +322,12 @@ async function extractAudio(
   })
   const detach = hookAbort(signal, child)
 
+  // 同上：立即挂 'close' 监听，避免快失败的 ffmpeg 丢事件
+  const closePromise = new Promise<number>((resolve, reject) => {
+    child.once('close', (code) => resolve(code ?? -1))
+    child.once('error', reject)
+  })
+
   const tail: string[] = []
   const consume = async (stream: NodeJS.ReadableStream): Promise<void> => {
     for await (const chunk of stream) {
@@ -331,10 +342,7 @@ async function extractAudio(
 
   try {
     await Promise.all([consume(child.stdout), consume(child.stderr)])
-    const code: number = await new Promise((resolve, reject) => {
-      child.once('exit', (c) => resolve(c ?? -1))
-      child.once('error', reject)
-    })
+    const code = await closePromise
 
     if (signal?.aborted) {
       throw new DownloadError('下载已取消')
