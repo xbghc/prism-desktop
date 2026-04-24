@@ -10,6 +10,7 @@ import { setupSingleInstance } from './platform/single-instance'
 import { installWindowsPlatform, focusPrimaryWindow } from './platform'
 import { createWorkspace, getWorkspace } from './workspace-store'
 import { runWorkspacePipeline } from './pipeline'
+import { setupAutoUpdater } from './updater'
 
 const log = createLogger('main')
 
@@ -120,6 +121,8 @@ app.whenReady().then(() => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  setupAutoUpdater()
 })
 
 app.on('window-all-closed', () => {
