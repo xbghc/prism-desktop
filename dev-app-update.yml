@@ -1,0 +1,4 @@
+provider: github
+owner: xbghc
+repo: prism-desktop
+updaterCacheDirName: prism-desktop-updater
