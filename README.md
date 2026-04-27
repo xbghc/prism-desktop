@@ -36,8 +36,8 @@ electron-updater，用户侧可自动升级。
 ```bash
 # 1. 在 package.json 升版本号（手动改 version 或 pnpm version）
 # 2. 打 tag 并推送
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.0.1
+git push origin v0.0.1
 ```
 
 推送 `v*` tag 会触发 `.github/workflows/release.yml`：

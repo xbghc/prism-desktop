@@ -1,6 +1,6 @@
 {
   "name": "prism-desktop",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Prism 桌面客户端 - 视频内容转化（视频→文字、大纲、文章、播客）",
   "main": "./out/main/index.js",
